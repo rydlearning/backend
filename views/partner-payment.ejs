@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Favicon -->
+    <link rel="shortcut icon" type="image/x-icon" href="/favicon.png">
+
+    <title>Invoice | RYD Learning</title>
+
+    <!-- template css -->
+    <link rel="stylesheet" href="/stylesheets/cassie.css">
+
+    <script>
+        const stripeKey = `<%= data.stripeKey %>`
+        const paystackKey = `<%= data.paystackKey %>`
+    </script>
+</head>
+<body>
+
+<div class="content-body">
+    <div class="card card-invoice">
+        <div class="card-header">
+            <div>
+                <img src="https://i.im.ge/2024/01/29/bLiLG0.logo.png" alt="RYD Logo" style="border:none;width:150px">
+                <h5 class="mg-b-3">Invoice #<%= data?.paymentID %></h5>
+                <span class="tx-sm text-muted">Due on <%= (new Date().toDateString()) %></span>
+            </div>
+            <div class="btn-group-invoice">
+                <a href="javascript:window.print()" class="btn btn-white btn-lg btn-uppercase"><i
+                            data-feather="printer"></i> Print</a>
+            </div>
+        </div><!-- card-header -->
+        <div class="card-body">
+            <div class="row">
+                <div class="col-sm-6">
+                    <label class="content-label">Billed From</label>
+                    <h6 class="tx-15 mg-b-10">RYD Learning.</h6>
+                    <p class="mg-b-0">Durham, Greater Toronto Area, Ontario, Canada</p>
+                    <p class="mg-b-0">Tel No: </p>
+                    <p class="mg-b-0">Email: support@rydlearning.com</p>
+                </div><!-- col -->
+                <div class="col-sm-6 tx-right d-none d-md-block">
+                    <label class="content-label">Invoice Number</label>
+                    <h2 class="tx-normal tx-gray-400 mg-b-10 tx-spacing--2">#<%= data.paymentID %></h2>
+                </div><!-- col -->
+                <div class="col-sm-6 col-lg-8 mg-t-40 mg-sm-t-0 mg-md-t-40">
+                    <label class="content-label">Billed To</label>
+                    <h6 class="tx-15 mg-b-10">Parent: <%= `${data?.d?.firstName} ${data?.d?.lastName}` %></h6>
+                    <p class="mg-b-0"><%= `${data?.d?.country}` %> - <%= `${data?.d?.state}` %></p>
+                    <p class="mg-b-0">Tel No: <%= `${data?.d?.phone}` %></p>
+                    <p class="mg-b-0">Email: <%= `${data?.d?.email}` %></p>
+                </div><!-- col -->
+                <div class="col-sm-6 col-lg-4 mg-t-40">
+                    <label class="content-label">Invoice Information</label>
+                    <ul class="list-unstyled lh-7">
+                        <li class="d-flex justify-content-between">
+                            <span>Invoice Number</span>
+                            <span><%= data.paymentID %></span>
+                        </li>
+                        <li class="d-flex justify-content-between">
+                            <span>Product ID</span>
+                            <span>N/A</span>
+                        </li>
+                        <li class="d-flex justify-content-between">
+                            <span>Issue Date</span>
+                            <span><%= (new Date().toDateString()) %></span>
+                        </li>
+                        <li class="d-flex justify-content-between">
+                            <span>Due Date</span>
+                            <span>N/A</span>
+                        </li>
+                    </ul>
+                </div><!-- col -->
+            </div><!-- row -->
+
+            <div class="table-responsive mg-t-25">
+                <table class="table table-invoice bd-b">
+                    <thead>
+                    <tr>
+                        <th>S/N</th>
+                        <th class="wd-20p">Package</th>
+                        <th class="tx-nowrap">Child Name</th>
+                        <th class="tx-nowrap">Age</th>
+                        <th class="tx-nowrap">Week (Day)</th>
+                        <th class="tx-nowrap">Duration</th>
+                        <th class="tx-nowrap">Unit Price</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <% data?._children?.forEach(function (d, i){ %>
+                        <tr>
+                            <td class="tx-nowrap"><%= i + 1 %></td>
+                            <td class="tx-nowrap"><%= data?._packages[i]?.title %></td>
+                            <td class="tx-nowrap"><%= `${d?.firstName.toUpperCase()} ${d?.lastName.toUpperCase()}` %></td>
+                            <td class="tx-nowrap"><%= d?.age %> Years</td>
+                            <td class="tx-nowrap"><%= data._weekDayArr[d?.programs[0]?.day] %></td>
+                            <td class="tx-nowrap">8 Weeks</td>
+                            <td class="tx-nowrap"><%= data?.cur?.currencyCode %> <%= Number(data?._packages[i]?.amount).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,') %></td>
+                        </tr>
+                    <% }) %>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="row justify-content-between mg-t-25">
+                <div class="col-sm-6 col-lg-6 order-2 order-sm-0 mg-t-40 mg-sm-t-0">
+                    <label class="content-label mg-b-10">Some Additional Notes</label>
+                    <p class="tx-sm">
+                        Thank you for choosing RYD Learning for your educational needs. Please review our no-refund
+                        policy below:
+                        <br/>
+                    </p>
+                    <% if(data?._foundCoupon){ %>
+                        <div>
+                            <h5><%= !data?._foundCoupon?.isPercentage ? data?.cur?.currencyCode : '' %><%= data?._foundCoupon?.value %><%= data?._foundCoupon?.isPercentage ? '%' : '' %>
+                                discount for you !</h5>
+                            <a href="javascript:void" onclick="copyDiscount(`<%= data?._foundCoupon.code %>`)">
+                                <h6>Click to use <code><%= data?._foundCoupon.code %></code> coupon</h6>
+                            </a>
+                        </div>
+                    <% } %>
+                </div><!-- col -->
+                <div class="col-sm-6 col-lg-4 order-1 order-sm-0">
+                    <ul class="list-unstyled lh-7 pd-r-10">
+                        <li class="d-flex justify-content-between">
+                            <span>Total Due</span>
+                            <span><%= data?.cur?.currencyCode %> <%= Number(data?._amountBefore).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,') %></span>
+                        </li>
+                        <!--                        <li class="d-flex justify-content-between">-->
+                        <!--                            <span>Tax (5%)</span>-->
+                        <!--                            <span>$0.0</span>-->
+                        <!--                        </li>-->
+                        <li class="d-flex justify-content-between">
+                            <span>Discount</span>
+                            <span><%= data?.cur?.currencyCode %> -<%= Number(data?._useCoupon?.d || 0).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,') %></span>
+                        </li>
+                        <li class="d-flex justify-content-between">
+                            <strong>Sub-Total</strong>
+                            <strong><%= data?.cur?.currencyCode %> <%= Number(data?._amount).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,') %></strong>
+                        </li>
+                    </ul>
+                    <div class="form-group">
+                        <label>Promotional Code ? <small id="errorTxt" style="color: red"></small></label>
+                        <input id="cTxt" type="text" class="form-control" placeholder="Coupon RYD-"
+                               oninput="isCouponInput()">
+                        <small style="color: red"><%= data?.message %></small>
+                    </div>
+                    <div id="loader" style="text-align: center; display: none">
+                        <img src="/spinner.gif" alt="loader" style="width: 50px">
+                    </div>
+                    <button onclick="paymentButton()" id="payBtn" style="background-color: #a85189; border-width: 0;"
+                            class="btn btn-block btn-warning btn-brand-02">Continue
+                    </button>
+                    <div id="express-checkout-element">
+                        <!-- Mount the Express Checkout Element here -->
+                    </div>
+                </div><!-- col -->
+            </div>
+        </div><!-- card-body -->
+    </div><!-- card -->
+</div><!-- content-body -->
+<script src="https://js.stripe.com/v3/" nonce="rAnd0m"></script>
+<script src="https://js.paystack.co/v2/inline.js"></script>
+<script>
+    //initialized
+    let stripe = Stripe(stripeKey);
+    //listen to type event change
+    const paymentID = `<%= data.paymentID %>`
+    const parentToken = `<%= data.d.token %>`
+    const parentID = `<%= data.d.id %>`
+    const parentEmail = `<%= data.d.email %>`
+    const parentPhone = `<%= data.d.phone %>`
+    const parentName = `<%= data.d.firstName + " " + data.d.lastName %>`
+    const couponApplied = `<%= data?._useCoupon?.code %>`
+    const amount = `<%= data._amount %>`
+    const curSymbol = `<%= data?.cur?.currencyCode %>`
+    const programIDs = `<%= data?.programIDs %>`
+    let isCouponReady = false
+    let actionsStepper = 0
+    let isPaidReady = false
+    let paymentLink = null
+    let cTxt = document.getElementById('cTxt')
+    let payBtn = document.getElementById('payBtn')
+
+    //disable coupon
+    if (couponApplied) {
+        cTxt.value = "XX" + couponApplied.substring(3, 6)
+        document.getElementById("errorTxt").innerText = "Coupon is applied"
+        cTxt.disabled = true
+    }
+
+    //check typing listing
+    function isCouponInput() {
+        if (cTxt.value.length > 5) {
+            actionsStepper = 1
+            payBtn.innerText = "Confirm Coupon"
+        } else {
+            actionsStepper = 0
+            payBtn.innerText = "Continue"
+        }
+    }
+
+    //btn for payment
+    async function paymentButton() {
+        //check for payment or do the algorithm
+        if (isPaidReady) {
+            //for international
+            window.open(paymentLink, "_self")
+            return
+        }
+        if (actionsStepper === 1) {
+            //display on
+            document.getElementById("loader").style.display = "block"
+            payBtn.style.display = "none"
+            //verify coupon
+            const checkCoupon = await fetch("/common/payment/check/coupon/" + cTxt.value).then(r => r.json())
+            if (checkCoupon.status && checkCoupon.data.isValid) {
+                //reload page for discount
+                window.location.href = "/common/partner-payment-init/" + parentID + "/" + checkCoupon?.data?.code
+            } else {
+                document.getElementById("errorTxt").innerText = "Invalid coupon " + checkCoupon?.data?.code
+                document.getElementById("loader").style.display = "none"
+                payBtn.style.display = "block"
+            }
+        } else {
+            //Nigeria pay only
+            if (curSymbol === "NGN") {
+                withPaystack()
+                return
+            }
+            //arrange intent collections
+            const data = {
+                currency: curSymbol.toLowerCase(),
+                amount: Math.floor(Number(amount) * 100),
+                metadata: {parentID, programIDs: programIDs, isPartner: true},
+                email: parentEmail,
+                phone: parentPhone,
+                name: parentName
+            }
+            //pause next operations
+            payBtn.disabled = true
+            payBtn.innerText = "Please wait..."
+            //display on
+            document.getElementById("loader").style.display = "block"
+            payBtn.style.display = "none"
+            //call for intent or request
+            const intentRequest = await fetch("/common/payment/get/stripe-intent", {
+                body: JSON.stringify(data),
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": parentPhone
+                }
+            }).then(r => r.json())
+            //apply intent result
+            if (intentRequest.status && intentRequest.data) {
+                //proceed payment
+                isPaidReady = true
+                paymentLink = intentRequest?.data?.url
+                //display on
+                document.getElementById("loader").style.display = "none"
+                payBtn.style.display = "block"
+                payBtn.innerText = "Proceed to payment"
+                payBtn.disabled = false
+                // let elements = stripe.elements({
+                //     mode: 'payment',
+                //     amount: data.amount,
+                //     currency: data.currency
+                // });
+                // const expressCheckoutElement = elements.create("expressCheckout");
+                // expressCheckoutElement.mount("#express-checkout-element");
+                // expressCheckoutElement.on('click', (event) => {
+                //     const options = {
+                //         emailRequired: true,
+                //     };
+                //     event.resolve(options);
+                // });
+                // expressCheckoutElement.on('ready', ({availablePaymentMethods}) => {
+                //     // if (!availablePaymentMethods) {
+                //     //     // No buttons will show
+                //     // } else {
+                //     //     // Optional: Animate in the Element
+                //     //     expressCheckoutDiv.style.visibility = 'initial';
+                //     // }
+                //     document.getElementById("loader").style.display = "none"
+                // });
+                // expressCheckoutElement.on('confirm', function (event) {
+                //     // call Stripe function to initiate payment confirmation
+                //     stripe.confirmPayment({
+                //         elements,
+                //         confirmParams: {
+                //             return_url: window.location.host + '/common/payment-status',
+                //         },
+                //         clientSecret: intentRequest.data.clientSecret
+                //     }).then(function (result) {
+                //         if (result.error) {
+                //             // Inform the customer that there's an error.
+                //
+                //         } else {
+                //             //success
+                //
+                //         }
+                //         //console.log(result)
+                //     });
+                // });
+            } else {
+                //pause next operations
+                payBtn.disabled = false
+                payBtn.innerText = "Please Retry"
+            }
+        }
+    }
+
+    //copy discount code
+    function copyDiscount(code) {
+        cTxt.value = code
+    }
+
+    //paystack options
+    function withPaystack() {
+        let handler = PaystackPop.setup({
+            key: paystackKey, // Replace with your public key
+            email: parentEmail,
+            amount: Math.floor(Number(amount) * 100),
+            ref: '' + paymentID,
+            metadata: {parentID, programIDs: programIDs, isPartner: true},
+            onClose: function () {
+                window.location.reload()
+            },
+            callback: function (response) {
+                window.open((`${window.location.host}/common/payment-status-paystack` + response.redirecturl), "_self")
+            }
+        });
+
+        handler.openIframe();
+    }
+</script>
+</body>
+</html>
