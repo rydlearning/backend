@@ -18,7 +18,8 @@ const {
     commonPaymentStatusPaystack,
     getAffiliates,
     GetAllTestimonial,
-    commonGetPartnerPaymentIntent, commonPartnerProcessInvoice, GetProgramCertificate, CheckMigrations
+    commonGetPartnerPaymentIntent, commonPartnerProcessInvoice, GetProgramCertificate, CheckMigrations,
+    GetProgramCertificateData
 } = require("../controllers/controller.common");
 const { getAllPublishedBlogs, updateBlogViews, updateBlogLikes, getSingleBlog } = require('../controllers/controller.admin');
 // const { promoParentCreateProgramsForChildrenWithoutProgram, updatePromoProgramsTimeGroupIndex } = require('../controllers/controller.promo');
@@ -56,6 +57,7 @@ router.get('/testimonial/all', GetAllTestimonial);
 
 //CERTIFICATE PROGRAMS
 router.get('/certificate/:id', GetProgramCertificate);
+router.get('/preview/certificate/:id', GetProgramCertificateData);
 
 //MIGRATIONS DBs
 router.get('/migration-db', migrationDBs);

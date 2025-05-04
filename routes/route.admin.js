@@ -129,12 +129,15 @@ let {
     updateBlog,
     deleteBlog,
     updateBlogStatus,
-    getAuditLog, adminCreditParent
+    getAuditLog, adminCreditParent,
+    adminSendAllParentsCertificateEmail,
+    adminSendSingleParentsCertificateEmail
 } = require('../controllers/controller.admin');
 const {createPromo, getAllPromoTimeTableWithId} = require('../controllers/controller.promo');
 const {
     teacherProgramCompleteAndUncomplete,
-    teacherProgramCompleteAndUncompleteSingle
+    teacherProgramCompleteAndUncompleteSingle,
+    getAllReport
 } = require('../controllers/controller.teacher');
 const {AuditLog} = require("../models");
 const { dndtoggler } = require('../controllers/controller.parent');
@@ -180,6 +183,8 @@ router.get('/parent/:id', useAsync(adminBodyGuard), useAsync(adminGetParentById)
 router.put('/parent/edit/:id', useAsync(adminBodyGuard), useAsync(bodyParser), useAsync(adminUpdateParent));
 router.delete('/parent/:id', useAsync(adminBodyGuard), useAsync(adminDeleteParent));
 router.post('/parent/credit/:id', useAsync(adminBodyGuard), useAsync(adminCreditParent));
+router.post('/parent/certificate', useAsync(adminBodyGuard), useAsync(bodyParser), useAsync(adminSendAllParentsCertificateEmail));
+router.post('/parent/single/certificate', useAsync(adminBodyGuard), useAsync(bodyParser), useAsync(adminSendSingleParentsCertificateEmail));
 
 //admin child route
 router.post('/child/create', useAsync(bodyParser), useAsync(adminCreateChild));
@@ -341,5 +346,8 @@ router.get('/audit/all', (adminBodyGuard), getAuditLog);
 //dnd
 router.get('/parent/dnd/:id', useAsync(adminBodyGuard), useAsync(dndtoggler));
 
+
+//REPORT
+router.get('/report/all', (adminBodyGuard), getAllReport);
 
 module.exports = router;

@@ -4,7 +4,7 @@
 const sha1 = require('sha1');
 const Joi = require('joi');
 
-const {useAsync, utils, errorHandle,} = require('./../core');
+const { useAsync, utils, errorHandle, } = require('./../core');
 const {
     ModelParent,
     ModelTeacher,
@@ -12,10 +12,11 @@ const {
     ModelChild,
     ModelPackage,
     ModelAttendance,
-    ModelSwap, ModelAuthorization, ModelPromoProgram, ModelPromoChild, ModelPromoParent
+    ModelSwap, ModelAuthorization, ModelPromoProgram, ModelPromoChild, ModelPromoParent,
+    ModelReport
 } = require("../models");
 const EmailService = require("../services");
-const {Op} = require("sequelize");
+const { Op } = require("sequelize");
 const sequelize = require("sequelize");
 const ModelTimegroup = require('../models/model.timegroup');
 
@@ -23,7 +24,7 @@ exports.teacherLogin = useAsync(async (req, res, next) => {
     try {
         //create data if all data available
         const schema = Joi.object({
-            email: Joi.string().email({minDomainSegments: 2}).required(),
+            email: Joi.string().email({ minDomainSegments: 2 }).required(),
             password: Joi.string().min(5).required(),
         })
         //validate data
@@ -31,8 +32,8 @@ exports.teacherLogin = useAsync(async (req, res, next) => {
         //hash password
         data.password = sha1(data.password)
         //capture user data
-        const teacherFound = await ModelTeacher.findOne({where: data})
-        if (teacherFound) await teacherFound.update({token: sha1(new Date().toUTCString())})
+        const teacherFound = await ModelTeacher.findOne({ where: data })
+        if (teacherFound) await teacherFound.update({ token: sha1(new Date().toUTCString()) })
         if (teacherFound) await teacherFound.reload()
         res.json(utils.JParser(teacherFound ? "Login successful" : "Invalid email / password", !!teacherFound, teacherFound));
     } catch (e) {
@@ -47,7 +48,7 @@ exports.teacherRegister = useAsync(async (req, res, next) => {
     try {
         //console.log(req.body)
         const schema = Joi.object({
-            email: Joi.string().email({minDomainSegments: 2}).required(),
+            email: Joi.string().email({ minDomainSegments: 2 }).required(),
             password: Joi.string().min(5).required(),
             firstName: Joi.string().min(3).required(),
             lastName: Joi.string().min(1).required(),
@@ -66,14 +67,14 @@ exports.teacherRegister = useAsync(async (req, res, next) => {
         data.password = sha1(data.password)
         data.token = sha1(new Date().toUTCString())
 
-        const invitation = await ModelAuthorization.findOne({where: {email: data.email, isUsed: false}})
+        const invitation = await ModelAuthorization.findOne({ where: { email: data.email, isUsed: false } })
 
         if (!invitation) {
             return res.json(utils.JParser("Unauthorized registration", false, {}));
         }
 
-        const [createTeacher, status] = await ModelTeacher.findOrCreate({where: {email: data.email}, defaults: data})
-        await invitation.update({isUsed: true, id: createTeacher.id})
+        const [createTeacher, status] = await ModelTeacher.findOrCreate({ where: { email: data.email }, defaults: data })
+        await invitation.update({ isUsed: true, id: createTeacher.id })
         if (status) message = "Account created successfully"
         else message = "Account with this email already exists"
         //if newly created then send email
@@ -114,7 +115,7 @@ exports.teacherUpdate = useAsync(async (req, res, next) => {
         //if newly created then send email
         if (teacher) {
             //update model
-            await teacher.update({...teacher.toJSON(), ...data})
+            await teacher.update({ ...teacher.toJSON(), ...data })
             //sending email
             EmailService.sendNotificationUpdate(teacher.email, "Profile update")
         }
@@ -131,10 +132,10 @@ exports.teacherPasswordReset = useAsync(async (req, res, next) => {
     try {
         //console.log(req.body)
         const schema = Joi.object({
-            email: Joi.string().email({minDomainSegments: 2}).required(),
+            email: Joi.string().email({ minDomainSegments: 2 }).required(),
         })
         const data = await schema.validateAsync(req.body)
-        const teacher = await ModelTeacher.findOne({where: {email: data.email}})
+        const teacher = await ModelTeacher.findOne({ where: { email: data.email } })
         if (teacher) message = "Password reset successfully"
         else message = "Unable to reset password, Invalid email"
         //if parent found, reset password
@@ -142,7 +143,7 @@ exports.teacherPasswordReset = useAsync(async (req, res, next) => {
             //new password
             const pwd = utils.AsciiCodes(8)
             //sending email
-            await teacher.update({password: sha1(pwd), token: sha1(new Date().toUTCString())})
+            await teacher.update({ password: sha1(pwd), token: sha1(new Date().toUTCString()) })
             EmailService.sendPasswordReset(teacher.email, pwd)
         }
         res.json(utils.JParser(message, !!teacher, null));
@@ -179,7 +180,7 @@ exports.teacherPasswordUpdate = useAsync(async (req, res, next) => {
             //if newly created then send email
             if (teacher) {
                 //update password
-                await teacher.update({password: data?.password1})
+                await teacher.update({ password: data?.password1 })
                 //sending email
                 EmailService.sendPasswordNotifications(teacher.email)
                 res.json(utils.JParser("Password changed successfully", true, null));
@@ -202,16 +203,17 @@ exports.teacherGetActivities = useAsync(async (req, res, next) => {
         const data = await ModelTeacher.findByPk(session.id, {
             include: {
                 model: ModelProgram, as: "programs",
-                where: {isPaid: true, isCompleted: false},
+                where: { isPaid: true, isCompleted: false },
                 include: [
-                    {model: ModelChild, as: "child", include: {model: ModelParent, as: "parent"}},
-                    {model: ModelPackage, as: "package"},
-                    {model: ModelAttendance, as: "attendance"}
+                    { model: ModelChild, as: "child", include: { model: ModelParent, as: "parent" } },
+                    { model: ModelPackage, as: "package" },
+                    { model: ModelReport, as: "reports" },
+                    { model: ModelAttendance, as: "attendance" }
                 ]
             },
-            order: [[{model: ModelProgram, as: "programs"}, 'id', 'DESC']]
+            order: [[{ model: ModelProgram, as: "programs" }, 'id', 'DESC']]
         })
-        res.json(utils.JParser(data?"Get all activities":"No student(s) for you at the moment", !!data, data?data:[]));
+        res.json(utils.JParser(data ? "Get all activities" : "No student(s) for you at the moment", !!data, data ? data : []));
     } catch (e) {
         throw new errorHandle(e.message, 202);
     }
@@ -224,15 +226,15 @@ exports.teacherGetPrommoActivities = useAsync(async (req, res, next) => {
         const data = await ModelTeacher.findByPk(session.id, {
             include: {
                 model: ModelPromoProgram, as: "promo_programs",
-                where: {isCompleted: false},
+                where: { isCompleted: false },
                 include: [
-                    {model: ModelPromoChild, as: "child", include: {model: ModelPromoParent, as: "parent"}},
-                    {model: ModelTimegroup, as: "timeGroup"}
+                    { model: ModelPromoChild, as: "child", include: { model: ModelPromoParent, as: "parent" } },
+                    { model: ModelTimegroup, as: "timeGroup" }
                 ]
             },
-            order: [[{model: ModelPromoProgram, as: "promo_programs"}, 'id', 'DESC']]
+            order: [[{ model: ModelPromoProgram, as: "promo_programs" }, 'id', 'DESC']]
         })
-        res.json(utils.JParser(data?"Get all activities":"No student(s) for you at the moment", !!data, data?data:[]));
+        res.json(utils.JParser(data ? "Get all activities" : "No student(s) for you at the moment", !!data, data ? data : []));
     } catch (e) {
         throw new errorHandle(e.message, 202);
     }
@@ -242,7 +244,7 @@ exports.teacherGetPrommoActivities = useAsync(async (req, res, next) => {
 exports.teacherGetAllTeachers = useAsync(async (req, res, next) => {
     const session = req.app.locals.session;
     try {
-        const data = await ModelTeacher.findAll({where: {id: {[Op.not]: session.id}}})
+        const data = await ModelTeacher.findAll({ where: { id: { [Op.not]: session.id } } })
         res.json(utils.JParser("Teachers loaded", !!data, data));
     } catch (e) {
         throw new errorHandle(e.message, 202);
@@ -254,11 +256,11 @@ exports.teacherSwapGet = useAsync(async (req, res, next) => {
     const session = req.app.locals.session;
     try {
         const data = await ModelSwap.findAll({
-            where: {fromTeacherId: session.id},
+            where: { fromTeacherId: session.id },
             include: [
-                {model: ModelTeacher, as: "fromTeacher"},
-                {model: ModelTeacher, as: "toTeacher"},
-                {model: ModelProgram, as: "program", include: {model: ModelChild, as: "child"}},
+                { model: ModelTeacher, as: "fromTeacher" },
+                { model: ModelTeacher, as: "toTeacher" },
+                { model: ModelProgram, as: "program", include: { model: ModelChild, as: "child" } },
             ]
         })
         res.json(utils.JParser("Swaps loaded", !!data, data));
@@ -289,7 +291,7 @@ exports.teacherSwapSet = useAsync(async (req, res, next) => {
 //update child library
 exports.teacherProgramUpdateLibrary = useAsync(async (req, res, next) => {
     const session = req.app.locals.session;
-    const {id} = req.params
+    const { id } = req.params
     try {
         const schema = Joi.object({
             assessmentUrl: Joi.string().allow(""),
@@ -318,7 +320,7 @@ exports.teacherProgramCompleteAndUncomplete = useAsync(async (req, res, next) =>
     }
     try {
         //find program
-        const _program = await ModelPromoProgram.findAll({ where: { id: ids }})
+        const _program = await ModelPromoProgram.findAll({ where: { id: ids } })
         if (!_program || _program.length === 0) {
             return res.json(utils.JParser("Programs not found, Try again later", false, []));
         }
@@ -333,15 +335,15 @@ exports.teacherProgramCompleteAndUncomplete = useAsync(async (req, res, next) =>
 
 exports.teacherProgramCompleteAndUncompleteSingle = useAsync(async (req, res, next) => {
     const session = req.app.locals.session;
-    const {id} = req.params
+    const { id } = req.params
     const status = req.body.status
-    console.log(status,id)
+    console.log(status, id)
     try {
         //find program
         const _program = await ModelPromoProgram.findByPk(id)
         if (_program) {
             //update links
-            await _program.update({isCompleted: status})
+            await _program.update({ isCompleted: status })
         }
         res.json(utils.JParser("Program completed !", !!_program, _program));
     } catch (e) {
@@ -362,7 +364,7 @@ exports.parentMarkAttendance = useAsync(async (req, res, next) => {
         const data = await schema.validateAsync(req.body)
         //check and create attendance
         const findToday = await ModelAttendance.findOne({
-            where: {createdAt: {[Op.gt]: sequelize.literal("NOW() - INTERVAL 24 HOUR")}, programId: data.programId}
+            where: { createdAt: { [Op.gt]: sequelize.literal("NOW() - INTERVAL 24 HOUR") }, programId: data.programId }
         })
         if (!findToday) {
             const attend = await ModelAttendance.create(data)
@@ -381,6 +383,202 @@ exports.Template = useAsync(async (req, res, next) => {
     try {
 
         res.json(utils.JParser("Packages loaded", !!data, data));
+    } catch (e) {
+        throw new errorHandle(e.message, 202);
+    }
+});
+
+
+////////////////////////////////////////////////////////////////////////////////////////////
+///////////REPORT
+////////////////////////////////////////////////////////////////////////////////////////
+
+exports.createReport = useAsync(async (req, res, next) => {
+    const session = req.app.locals.session;
+    try {
+        const schema = Joi.object({
+            childId: Joi.number().required(),
+            parentId: Joi.number().required(),
+            programId: Joi.number().required(),
+            progressNotes: Joi.string().required(),
+            name: Joi.string().required(),
+            areasForImprovement: Joi.string().required(),
+            supportSuggestions: Joi.string().required(),
+            additionalComments: Joi.string(),
+            cohortCompleted: Joi.boolean().required(),
+        })
+
+        const data = await schema.validateAsync(req.body)
+        // const data = req.body
+        data.teacherId = session.id
+        const program = await ModelProgram.findOne({
+            where: { id: data.programId }
+        })
+        if (!program.reportCreated) {
+            const report = await ModelReport.create(data)
+            if (report) {
+                await program.update({ reportCreated: true, reportId: report.id })
+            }
+            res.json(utils.JParser("Report created successfully", !!report, report));
+        } else {
+            res.json(utils.JParser("Report created already", false, []));
+        }
+
+    } catch (e) {
+        throw new errorHandle(e.message, 202);
+    }
+});
+
+exports.updateReport = useAsync(async (req, res, next) => {
+    const id = req.params.id
+    try {
+        const schema = Joi.object({
+            childId: Joi.number(),
+            parentId: Joi.number(),
+            programId: Joi.number(),
+            progressNotes: Joi.string(),
+            name: Joi.string(),
+            areasForImprovement: Joi.string(),
+            supportSuggestions: Joi.string(),
+            additionalComments: Joi.string(),
+            cohortCompleted: Joi.boolean(),
+        })
+
+        const data = await schema.validateAsync(req.body)
+        const report = await ModelReport.findOne({
+            where: { id }
+        })
+
+        if (report) message = "Report updated successfully"
+        else message = "Report has been updated successfully"
+        if (report) {
+            //update model
+            await report.update({ ...report.toJSON(), ...data })
+        }
+        res.json(utils.JParser(message, !!report, await report.reload()));
+    } catch (e) {
+        throw new errorHandle(e.message, 202);
+    }
+});
+
+
+exports.getChildReport = useAsync(async (req, res, next) => {
+    const id = req.params.id
+    try {
+        const data = await ModelReport.findAll({
+            where: { childId: id },
+            include: [
+                { model: ModelProgram, as: "program", include: { model: ModelPackage, as: "package" } },
+                { model: ModelChild, as: "child" },
+                { model: ModelTeacher, as: "teacher" },
+            ]
+        })
+        res.json(utils.JParser("Report fetched successfully", !!data, data));
+    } catch (e) {
+        throw new errorHandle(e.message, 202);
+    }
+});
+
+exports.getSingleReport = useAsync(async (req, res, next) => {
+    const id = req.params.id
+    try {
+        const data = await ModelReport.findOne({
+            where: { id },
+            include: [
+                { model: ModelProgram, as: "program", include: { model: ModelPackage, as: "package" } },
+                { model: ModelChild, as: "child", include: { model: ModelParent, as: "parent" } },
+                { model: ModelTeacher, as: "teacher" },
+            ]
+        })
+        res.json(utils.JParser("Report fetched successfully", !!data, data));
+    } catch (e) {
+        throw new errorHandle(e.message, 202);
+    }
+});
+
+exports.getParentChildReport = useAsync(async (req, res, next) => {
+    const id = req.params.id
+    try {
+        const data = await ModelReport.findAll({
+            where: { parentId: id },
+            include: [
+                { model: ModelProgram, as: "program", include: { model: ModelPackage, as: "package" } },
+                { model: ModelChild, as: "child", include: { model: ModelParent, as: "parent" } },
+                { model: ModelTeacher, as: "teacher" },
+            ]
+        })
+        res.json(utils.JParser("Report fetched successfully", !!data, data));
+    } catch (e) {
+        throw new errorHandle(e.message, 202);
+    }
+});
+
+exports.getAllReport = useAsync(async (req, res, next) => {
+
+    try {
+        const data = await ModelReport.findAll({
+            include: [
+                { model: ModelProgram, as: "program", include: { model: ModelPackage, as: "package" } },
+                { model: ModelChild, as: "child", include: { model: ModelParent, as: "parent" } },
+                { model: ModelTeacher, as: "teacher" },
+            ]
+        })
+        res.json(utils.JParser("Report fetched successfully", !!data, data));
+    } catch (e) {
+        throw new errorHandle(e.message, 202);
+    }
+});
+
+
+exports.submitReportComment = useAsync(async (req, res, next) => {
+    const id = req.params.id;
+    try {
+        const report = await ModelReport.findOne({
+            where: { id }
+        })
+        if (report) {
+            await report.update({ parentComments: req.body.comment })
+            res.json(utils.JParser("Comment submited successfully", !!report, report));
+        } else {
+            res.json(utils.JParser("Report not found", false, []));
+        }
+
+    } catch (e) {
+        throw new errorHandle(e.message, 202);
+    }
+});
+
+
+exports.getTeacherCohortPrograms = useAsync(async (req, res, next) => {
+    const session = req.app.locals.session;
+    try {
+        const data = await ModelProgram.findAll({
+            where: { teacherId: session.id, cohortId: req.params.id },
+            include: [
+                { model: ModelPackage, as: "package" },
+                { model: ModelChild, as: "child", include: { model: ModelParent, as: "parent" } }
+            ]
+        })
+        res.json(utils.JParser("programs fetched successfully", !!data, data));
+    } catch (e) {
+        throw new errorHandle(e.message, 202);
+    }
+});
+
+
+exports.clickedReport = useAsync(async (req, res, next) => {
+    const id = req.params.id;
+    try {
+        const report = await ModelReport.findOne({
+            where: { id }
+        })
+        if (report) {
+            await report.update({ clicked: true })
+            res.json(utils.JParser("Clicked successfully", !!report, report));
+        } else {
+            res.json(utils.JParser("Report not found", false, []));
+        }
+
     } catch (e) {
         throw new errorHandle(e.message, 202);
     }

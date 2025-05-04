@@ -21,8 +21,13 @@ let {
     parentMarkAttendance,
     teacherGetPrommoActivities,
     teacherProgramCompleteAndUncompleteSingle,
-    teacherProgramCompleteAndUncomplete
+    teacherProgramCompleteAndUncomplete,
+    createReport,
+    getSingleReport,
+    getTeacherCohortPrograms,
+    updateReport
 } = require('../controllers/controller.teacher');
+const { adminCohortGetAll } = require('../controllers/controller.admin');
 
 /* no auth. */
 router.post('/auth/login', useAsync(bodyParser), useAsync(teacherLogin));
@@ -41,5 +46,12 @@ router.post('/update/program/:id', useAsync(teacherBodyGuard), useAsync(teacherP
 router.put('/single/program/status/:id', useAsync(teacherBodyGuard), useAsync(teacherProgramCompleteAndUncompleteSingle));
 router.post('/program/status', useAsync(teacherBodyGuard), useAsync(teacherProgramCompleteAndUncomplete));
 router.post('/mark/attendance', useAsync(teacherBodyGuard), useAsync(parentMarkAttendance));
+router.get('/cohort/all', useAsync(teacherBodyGuard), useAsync(adminCohortGetAll));
+router.get('/program/cohort/:id', useAsync(teacherBodyGuard), useAsync(getTeacherCohortPrograms));
+
+//REPORT
+router.post('/report', useAsync(teacherBodyGuard), useAsync(createReport));
+router.put('/edit/report/:id', useAsync(teacherBodyGuard), useAsync(updateReport));
+router.get('/report/:id', useAsync(teacherBodyGuard), useAsync(getSingleReport));
 
 module.exports = router;

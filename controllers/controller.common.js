@@ -635,7 +635,10 @@ exports.commonProcessInvoice = useAsync(async (req, res, next) => {
                 //final check.. using NGN rate
                 _amount = Number(_amount / curDia.rate).toFixed(0)
                 _amountBefore = Number(_amountBefore / curDia.rate).toFixed(0)
-                _useCoupon.d = Number(_useCoupon.d / curDia.rate).toFixed(0)
+                if(_useCoupon){
+                    _useCoupon.d = Number(_useCoupon?.d / curDia.rate).toFixed(0)
+                }
+            
             }
             //junk data out
             req.app.locals.invoice = {
@@ -1079,6 +1082,29 @@ exports.GetProgramCertificate = useAsync(async (req, res, next) => {
         }
 
         const childDetails = await ModelPromoProgram.findOne(options)
+
+        res.json(utils.JParser("Programs retrieved successfully", !!childDetails, childDetails));
+    } catch (e) {
+        throw new errorHandle(e.message, 500);
+    }
+});
+
+exports.GetProgramCertificateData = useAsync(async (req, res, next) => {
+    try {
+        const {id} = req.params
+        const options = {
+            where: {id},
+            include: [
+                {
+                    model: ModelChild,
+                    as: "child",
+                    required: false,
+                },
+                {model: ModelPackage, as: "package"}
+            ]
+        }
+
+        const childDetails = await ModelProgram.findOne(options)
 
         res.json(utils.JParser("Programs retrieved successfully", !!childDetails, childDetails));
     } catch (e) {

@@ -116,6 +116,20 @@ exports.sendSubscriptionPaymentEmail = (email, data) => {
 `).subject("Subscription - RYD Learning").send().then(r => LOG_DEBUG ? console.log(r) : null);
 }
 
+
+exports.sendParentCertificateEmail = (data) => {
+    new emailTemple(data.email).who("Parent")
+        .body("Dear " + data.name + "<br/><br/>" +
+            "<strong>Congratulations! " + data.child + " successfully completed "+data.level+" of their coding class at RYD learning.</strong><br/><br/>" +
+            "<p>We are excited to let you know that your child's certificate is now ready for download!</p><br/>" +
+            "<strong>To download the certificate, please follow these simple steps:</strong><br/>" +
+            "<p>* Please <a href='https://parent.rydlearning.com/parent/certificate/preview/"+data.id+"'>Click here</a> to download your certificate.</p><br/> <br/>" +
+            "<p>The certificate will be available for download in PDF format.</p><br/><br/>" +
+            "<i>If you encounter any issues or need assistance with downloading the certificate, feel free to reach out to our support team at learning@rydlearning.com or call +18337371275.</i><br/><br/>" +
+            "<strong>Thank you for allowing us to be part of your child's learning journey!</strong><br/>")
+        .subject("Your Child's Coding Class Certificate is Ready to Download").send().then(r => LOG_DEBUG ? console.log(r) : null);
+}
+
 ////////////////////////////////////////////////////////////////
 // PARTNER
 ////////////////////////////////////////////////////////////////

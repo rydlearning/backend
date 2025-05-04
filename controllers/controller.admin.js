@@ -711,6 +711,7 @@ exports.adminCreatePackage = useAsync(async (req, res, next) => {
     try {
         const schema = Joi.object({
             title: Joi.string().required(),
+            name: Joi.string().required(),
             description: Joi.string().required(),
             timegroupId: Joi.number().optional(),
             imageUrl: Joi.string().allow(null).optional(),
@@ -735,6 +736,7 @@ exports.adminUpdatePackage = useAsync(async (req, res, next) => {
         const {id} = req.params;
         const schema = Joi.object({
             title: Joi.string(),
+            name: Joi.string(),
             description: Joi.string(),
             timeGroupId: Joi.number().optional(),
             subClass: Joi.any().optional(),
@@ -1401,8 +1403,7 @@ exports.adminGetAllTestimonial = useAsync(async (req, res, next) => {
             include: [
                 {
                     model: ModelParent,
-                    as: "parent",
-                    required: false
+                    as: "parent"
                 },
             ]
         })
@@ -1429,6 +1430,24 @@ exports.testimonialEnabled = useAsync(async (req, res, next) => {
     }
 });
 
+
+// const run = async () => {
+//     try {
+//         const data = {
+//             isCompleted: true
+//         }
+//         const options = {
+//             where: { cohortId: 20}
+//         }
+//         const [updatedCount] = await ModelProgram.update(data, options);
+//         console.log(`Testimonial updated successfully. Rows affected: ${updatedCount}`);        
+//     } catch (e) {
+//         console.log(e.message, 500);
+//     }
+// };
+
+// run()
+
 exports.testimonialDisabled = useAsync(async (req, res, next) => {
     try {
         const {id} = req.params;
@@ -1446,6 +1465,111 @@ exports.testimonialDisabled = useAsync(async (req, res, next) => {
     }
 });
 
+exports.adminSendAllParentsCertificateEmail = useAsync(async (req, res, next) => {
+    try {
+        const { id } = req.body;
+        if (!id) {
+            throw new Error('No program IDs provided');
+        }
+
+        const programs = await ModelProgram.findAll({
+            where: { id: id, isCompleted: true },
+            include: [
+                {
+                    model: ModelChild,
+                    as: "child",
+                    include: {
+                        model: ModelParent,
+                        as: "parent",
+                        required: true
+                    },
+                    required: true
+                },
+                {model: ModelPackage, as: "package"}
+            ]
+        });
+
+        if (!programs || programs.length === 0) {
+            return res.json(utils.JParser("No Programs completed found,", false, []));
+        }
+
+        const unCompleteProgram = programs.filter(program => !program.isCompleted);
+        if (unCompleteProgram.length > 0) {
+            return res.json(utils.JParser("Some programs are missing not completed yet, complete and try again", false, unCompleteProgram.map(p => p.id)));
+        }
+
+        for (const program of programs) {
+            const child = program.child;
+            const package = program.package;
+            const parent = child.parent;
+
+            const body = {
+                name: parent.firstName,
+                email: parent.email,
+                child: child.firstName,
+                id: program.id,
+                level: package.title
+            };
+
+            await EmailService.sendParentCertificateEmail(body);
+        }
+
+        res.json(utils.JParser("Parents mailed successfully", true, []));
+    } catch (e) {
+        throw new errorHandle(e.message, 500);
+    }
+});
+
+
+exports.adminSendSingleParentsCertificateEmail = useAsync(async (req, res, next) => {
+    try {
+        const { id } = req.body;
+        if (!id) {
+            throw new Error('No program IDs provided');
+        }
+
+        const program = await ModelProgram.findOne({
+            where: { id: id, isCompleted: true },
+            include: [
+                {
+                    model: ModelChild,
+                    as: "child",
+                    include: {
+                        model: ModelParent,
+                        as: "parent",
+                        required: true
+                    },
+                    required: true
+                },
+                {model: ModelPackage, as: "package"}
+            ]
+        });
+
+        if (!program) {
+            return res.json(utils.JParser("No program completed found,", false, []));
+        }
+
+        const child = program.child;
+        const parent = child.parent;
+        const package = program.package;
+
+        const body = {
+            name: parent.firstName,
+            email: parent.email,
+            child: child.firstName,
+            id: program.id,
+            level: package.title
+        };
+
+        await EmailService.sendParentCertificateEmail(body);
+
+        res.json(utils.JParser("Parents mailed successfully", true, []));
+    } catch (e) {
+        throw new errorHandle(e.message, 500);
+    }
+});
+
+//////////////////////////////////////////////////////////////////////////////
 //PARTNER
 exports.allPartners = useAsync(async (req, res, next) => {
     try {

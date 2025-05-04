@@ -31,4 +31,4 @@ exports.ModelPromo = require('./model.promo');
 exports.ModelMigration = require('./model.migration');
 exports.ModelBlog = require('./model.blog');
 exports.AuditLog = require('./model.mongo.audit');
-
+exports.ModelReport = require('./model.report');

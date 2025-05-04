@@ -4,9 +4,9 @@
 const sequelize = require('./../database');
 const {DataTypes, Model, QueryTypes} = require('sequelize');
 const {utils} = require("../core");
+const ModelProgram = require('./model.program');
+const ModelReport = require('./model.report');
 const tableName = "v2ryd_child";
-
-const ModelProgram = require('./model.program')
 const queryInterface = sequelize.getQueryInterface();
 
 /**
@@ -65,5 +65,9 @@ ModelChild.init({
 
 ModelChild.hasMany(ModelProgram, {foreignKey: {name: "childId", allowNull: true}, as: "programs", onDelete: "CASCADE"})
 ModelProgram.belongsTo(ModelChild, {foreignKey: {name: 'childId', allowNull: true}, as: "child", onDelete: "SET NULL"})
+
+ModelChild.hasMany(ModelReport, {foreignKey: {name: "childId", allowNull: true}, as: "reports"})
+ModelReport.belongsTo(ModelChild, {foreignKey: {name: "childId", allowNull: true}, as: "child"})
+
 sequelize.sync();
 module.exports = ModelChild;

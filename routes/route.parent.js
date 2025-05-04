@@ -25,6 +25,7 @@ let {
     parentAnswerSurvey,
     parentChildUpdate, parentGetCohort, testimonial, GetChildPrograms
 } = require('../controllers/controller.parent');
+const { getChildReport, getSingleReport, submitReportComment, getParentChildReport, clickedReport } = require('../controllers/controller.teacher');
 
 /* no auth. */
 router.post('/auth/login', useAsync(bodyParser), useAsync(parentLogin));
@@ -53,5 +54,12 @@ router.get('/get/currency', useAsync(parentBodyGuard), useAsync(parentGetCurrenc
 //surveys
 router.get('/survey/get', useAsync(parentBodyGuard), useAsync(parentGetSurvey));
 router.post('/survey/answer/:id', useAsync(parentBodyGuard), useAsync(parentAnswerSurvey));
+
+//report
+router.get('/report/child/:id', useAsync(parentBodyGuard), useAsync(getChildReport));
+router.get('/report/:id', useAsync(parentBodyGuard), useAsync(getSingleReport));
+router.get('/report/all/child/:id', useAsync(parentBodyGuard), useAsync(getParentChildReport));
+router.put('/report/comment/:id', useAsync(parentBodyGuard), useAsync(submitReportComment));
+router.put('/report/clicked/:id', useAsync(parentBodyGuard), useAsync(clickedReport));
 
 module.exports = router;

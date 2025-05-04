@@ -9,6 +9,7 @@ const ModelProgram = require ("./model.program")
 const ModelAuthorization = require("./model.authorization");
 const ModelPartnerProgram = require('./model.partner_program');
 const ModelPromoProgram = require('./model.promo_program');
+const ModelReport = require('./model.report');
 
 /**
  * Model extending sequelize model class
@@ -46,6 +47,9 @@ ModelPartnerProgram.belongsTo(ModelTeacher, {foreignKey: 'teacherId', as: "partn
 
 ModelTeacher.hasMany(ModelPromoProgram, {foreignKey: {name: "teacherId", allowNull: true}, as: "promo_programs"})
 ModelPromoProgram.belongsTo(ModelTeacher, {foreignKey: 'teacherId', as: "promo_teacher"})
+
+ModelTeacher.hasMany(ModelReport, {foreignKey: {name: "teacherId", allowNull: true}, as: "reports"})
+ModelReport.belongsTo(ModelTeacher, {foreignKey: {name: "teacherId", allowNull: true}, as: "teacher"})
 
 sequelize.sync();
 module.exports = ModelTeacher;
